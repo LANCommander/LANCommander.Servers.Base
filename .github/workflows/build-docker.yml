@@ -1,4 +1,4 @@
-name: Build & Push SteamCMD Server (Docker Hub)
+name: Build & Push Docker Base Image (Docker Hub)
 
 on:
   workflow_dispatch:
