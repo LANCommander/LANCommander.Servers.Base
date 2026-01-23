@@ -11,18 +11,22 @@ function Invoke-Hook {
         [string] $Filter = '*.ps1'
     )
 
-    $hookDirectory = "$Env:SCRIPT_HOOKS/$Hook"
+    $hookDirectory = "$Env:USER_HOOKS/$Hook"
 
     if (-not (Test-Path -Path $hookDirectory -PathType Container)) {
         Write-Log -Level Error "Hook directory does not exist: $hookDirectory"
         return
     }
 
-    $scripts = Get-ChildItem -Path $hookDirectory -Filter $Filter -File | Sort-Object -Property Name
+    $scripts = @(Get-ChildItem -Path $hookDirectory -Filter $Filter -File -ErrorAction SilentlyContinue | Sort-Object -Property Name)
+
+    if ($scripts.Count -eq 0) {
+        return
+    }
 
     foreach ($script in $scripts) {
         try {
-            Write-Log "Executing hook script: $Hook/${script.Name}"
+            Write-Log "Executing hook script: $Hook/$($script.Name)"
             & $script.FullName
         }
         catch {

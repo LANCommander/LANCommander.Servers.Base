@@ -99,7 +99,7 @@ function Mount-Overlay {
     function Test-DirEmpty {
         param([string]$Path)
         if (-not (Test-Path -LiteralPath $Path)) { return $true }
-        $items = Get-ChildItem -LiteralPath $Path -Force -ErrorAction Stop
+        $items = @(Get-ChildItem -LiteralPath $Path -Force -ErrorAction Stop)
         return ($items.Count -eq 0)
     }
 

@@ -7,12 +7,14 @@ FROM mcr.microsoft.com/powershell:debian-12
 ENV CONFIG_DIR=/config \
     OVERLAY_DIR=/config/Overlay \
     SERVER_DIR=/config/Server \
-    SERVER_ROOT=/server \
-    WORK_DIR=/tmp/.overlay-work \
-    SCRIPT_MODULES=/config/Scripts/Modules \
-    SCRIPT_HOOKS=/config/Scripts/Hooks \
+    SERVER_ROOT=/config/Merged \
+    WORK_DIR=/config/.overlay-work \
     LANCOMMANDER_HOME=/home/lancommander \
-    BASE_MODULES=/usr/local/share/powershell/Modules
+    BASE_MODULES=/usr/local/share/powershell/Modules \
+    BASE_HOOKS=/usr/local/share/powershell/Hooks \
+    USER_MODULES=/config/Scripts/Modules \
+    USER_HOOKS=/config/Scripts/Hooks
+
 # ----------------------------
 # User + directories
 # ----------------------------
@@ -24,16 +26,13 @@ RUN useradd -m -u 1337 -d "${LANCOMMANDER_HOME}" -s /usr/sbin/nologin lancommand
         "${SERVER_DIR}" \
         "${WORK_DIR}" \
         "${SERVER_ROOT}" \
-        "${SCRIPT_MODULES}" \
-        "${SCRIPT_HOOKS}" \
         "${BASE_MODULES}" \
+        "${BASE_HOOKS}" \
     && chown -R lancommander:lancommander \
         "${LANCOMMANDER_HOME}" \
         "${CONFIG_DIR}" \
         "${OVERLAY_DIR}" \
-        "${SERVER_DIR}" \
-        "${SCRIPT_MODULES}" \
-        "${SCRIPT_HOOKS}"
+        "${SERVER_DIR}"
 
 # ----------------------------
 # Built-in (immutable) PowerShell modules shipped with this image
@@ -44,6 +43,7 @@ RUN useradd -m -u 1337 -d "${LANCOMMANDER_HOME}" -s /usr/sbin/nologin lancommand
 # will hide anything placed there in the image.
 # ----------------------------
 COPY Modules/ "${BASE_MODULES}/"
+# COPY Hooks/ "${BASE_HOOKS}/" # (No built-in hooks for now)
 
 # ----------------------------
 # Entrypoint
