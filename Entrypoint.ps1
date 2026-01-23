@@ -58,7 +58,16 @@ Invoke-Hook "ServerStarted"
 
 Set-Location $Env:SERVER_ROOT
 
-Invoke-Expression "& ${Env:START_CMD}"
+$arguments = if ($env:START_ARGS) { [System.Management.Automation.PSParser]::Tokenize($env:START_ARGS, [ref]$null) |
+                               Where-Object { $_.Type -eq 'CommandArgument' } |
+                               ForEach-Object { $_.Content } } else { @() }
+
+if (-not (Test-Path $Env:START_EXE))
+{ 
+    throw "START_EXE not found: $Env:START_EXE"
+}
+
+exec $Env:START_EXE $arguments
 
 Write-Log "Server has stopped"
 

@@ -13,7 +13,9 @@ ENV CONFIG_DIR=/config \
     BASE_MODULES=/usr/local/share/powershell/Modules \
     BASE_HOOKS=/usr/local/share/powershell/Hooks \
     USER_MODULES=/config/Scripts/Modules \
-    USER_HOOKS=/config/Scripts/Hooks
+    USER_HOOKS=/config/Scripts/Hooks \
+    START_EXE="" \
+    START_ARGS=""
 
 # ----------------------------
 # User + directories
