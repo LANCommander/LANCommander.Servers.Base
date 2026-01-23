@@ -58,7 +58,7 @@ Invoke-Hook "ServerStarted"
 
 Set-Location $Env:SERVER_ROOT
 
-Invoke-Expression $START_CMD
+Invoke-Expression $Env:START_CMD
 
 Write-Log "Server has stopped"
 
