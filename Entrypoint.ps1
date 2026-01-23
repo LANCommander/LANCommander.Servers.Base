@@ -53,3 +53,13 @@ try {
 }
 
 Invoke-Hook "PostInitialization"
+
+Invoke-Hook "ServerStarted"
+
+Set-Location $Env:SERVER_ROOT
+
+Invoke-Expression $START_CMD
+
+Write-Log "Server has stopped"
+
+Invoke-Hook "ServerStopped"
