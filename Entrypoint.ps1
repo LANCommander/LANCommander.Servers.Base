@@ -76,6 +76,51 @@ if ($Env:HTTP_FILESERVER_ENABLED -eq "true" -or $Env:HTTP_FILESERVER_ENABLED -eq
     
     if ($nginxConfigTemplate) {
         $nginxConfig = $nginxConfigTemplate -replace '\{\{HTTP_FILESERVER_WEB_ROOT\}\}', $Env:HTTP_FILESERVER_WEB_ROOT
+        
+        # Add file pattern filter if configured
+        $filePatternFilter = ""
+        if ($Env:HTTP_FILESERVER_FILE_PATTERN) {
+            # Convert glob pattern to nginx regex
+            # Support patterns like: *.zip, *.exe, file*.txt, etc.
+            $pattern = $Env:HTTP_FILESERVER_FILE_PATTERN.Trim()
+            
+            # If it's a simple extension pattern like *.ext, convert to regex
+            if ($pattern -match '^\*\.(.+)$') {
+                $extension = $Matches[1]
+                $escapedExt = [regex]::Escape($extension)
+                $regexPattern = "\.$escapedExt$"
+            }
+            # If it starts with * (like *.zip), convert to regex
+            elseif ($pattern.StartsWith('*.')) {
+                $extension = $pattern.Substring(2)
+                $escapedExt = [regex]::Escape($extension)
+                $regexPattern = "\.$escapedExt$"
+            }
+            # If it's already a regex pattern (contains regex special chars), use as-is
+            elseif ($pattern -match '[\[\]\(\)\^\$\+\{\}\|\\]') {
+                $regexPattern = $pattern
+            }
+            # Otherwise, treat as literal string and escape it
+            else {
+                $escapedPattern = [regex]::Escape($pattern)
+                $regexPattern = $escapedPattern
+            }
+            
+            # Create nginx location block that denies files NOT matching the pattern
+            # Allow directories (ending with /) but deny files that don't match the pattern
+            $filePatternFilter = @"
+        # Deny files that don't match the pattern: $pattern
+        # Allow directories (for directory listing) but filter files
+        location ~ ^(?!.*/$)(?!.*$regexPattern).*$ {
+            deny all;
+            access_log off;
+            log_not_found off;
+        }
+"@
+            Write-Log "File pattern filter enabled: $Env:HTTP_FILESERVER_FILE_PATTERN (regex: $regexPattern)"
+        }
+        $nginxConfig = $nginxConfig -replace '\{\{HTTP_FILESERVER_FILE_PATTERN_FILTER\}\}', $filePatternFilter
+        
         Set-Content -Path $nginxConfigPath -Value $nginxConfig -NoNewline
         Write-Log "Generated nginx configuration with web root: $Env:HTTP_FILESERVER_WEB_ROOT"
     } else {

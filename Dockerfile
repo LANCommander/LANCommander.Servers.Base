@@ -17,7 +17,8 @@ ENV CONFIG_DIR=/config \
     START_EXE="" \
     START_ARGS="" \
     HTTP_FILESERVER_ENABLED="" \
-    HTTP_FILESERVER_ROOT=/config/Server
+    HTTP_FILESERVER_ROOT=/config/Server \
+    HTTP_FILESERVER_FILE_PATTERN=""
 
 # ----------------------------
 # User + directories
