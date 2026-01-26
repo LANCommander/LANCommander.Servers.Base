@@ -15,12 +15,17 @@ ENV CONFIG_DIR=/config \
     USER_MODULES=/config/Scripts/Modules \
     USER_HOOKS=/config/Scripts/Hooks \
     START_EXE="" \
-    START_ARGS=""
+    START_ARGS="" \
+    HTTP_FILESERVER_ENABLED="" \
+    HTTP_FILESERVER_ROOT=/config/Server
 
 # ----------------------------
 # User + directories
 # ----------------------------
-RUN useradd -m -u 1337 -d "${LANCOMMANDER_HOME}" -s /usr/sbin/nologin lancommander \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nginx \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -u 1337 -d "${LANCOMMANDER_HOME}" -s /usr/sbin/nologin lancommander \
     && mkdir -p \
         "${LANCOMMANDER_HOME}" \
         "${CONFIG_DIR}" \
@@ -52,6 +57,12 @@ COPY Modules/ "${BASE_MODULES}/"
 # ----------------------------
 COPY ./Entrypoint.ps1 /usr/local/bin/entrypoint.ps1
 RUN chmod +x /usr/local/bin/entrypoint.ps1
+
+# ----------------------------
+# Nginx configuration template
+# ----------------------------
+RUN mkdir -p /usr/local/share
+COPY ./nginx.conf /usr/local/share/nginx.conf.template
 
 # ----------------------------
 # Runtime

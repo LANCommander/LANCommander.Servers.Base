@@ -54,6 +54,52 @@ try {
 
 Invoke-Hook "PostInitialization"
 
+# Setup nginx if enabled
+if ($Env:HTTP_FILESERVER_ENABLED -eq "true" -or $Env:HTTP_FILESERVER_ENABLED -eq "1") {
+    Write-Log "HTTP fileserver is enabled, setting up web server..."
+    
+    # Ensure web root directory exists
+    if (-not (Test-Path -Path $Env:HTTP_FILESERVER_WEB_ROOT)) {
+        New-Item -ItemType Directory -Path $Env:HTTP_FILESERVER_WEB_ROOT -Force | Out-Null
+        Write-Log "Created nginx web root directory: $Env:HTTP_FILESERVER_WEB_ROOT"
+    }
+    
+    # Ensure nginx log directories exist
+    $nginxLogDir = "/var/log/nginx"
+    if (-not (Test-Path -Path $nginxLogDir)) {
+        New-Item -ItemType Directory -Path $nginxLogDir -Force | Out-Null
+    }
+    
+    # Generate nginx configuration from template
+    $nginxConfigPath = "/etc/nginx/nginx.conf"
+    $nginxConfigTemplate = Get-Content -Path "/usr/local/share/nginx.conf.template" -Raw -ErrorAction SilentlyContinue
+    
+    if ($nginxConfigTemplate) {
+        $nginxConfig = $nginxConfigTemplate -replace '\{\{HTTP_FILESERVER_WEB_ROOT\}\}', $Env:HTTP_FILESERVER_WEB_ROOT
+        Set-Content -Path $nginxConfigPath -Value $nginxConfig -NoNewline
+        Write-Log "Generated nginx configuration with web root: $Env:HTTP_FILESERVER_WEB_ROOT"
+    } else {
+        Write-Log -Level Warning "Nginx config template not found, using default configuration"
+    }
+    
+    # Test nginx configuration
+    $nginxTest = & nginx -t 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Log "Nginx configuration test passed"
+        # Start nginx as daemon
+        & nginx
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "Nginx started successfully on port 80"
+        } else {
+            Write-Log -Level Error "Failed to start nginx"
+        }
+    } else {
+        Write-Log -Level Error "Nginx configuration test failed: $nginxTest"
+    }
+} else {
+    Write-Log "Nginx is disabled (HTTP_FILESERVER_ENABLED not set to 'true' or '1')"
+}
+
 Invoke-Hook "ServerStarted"
 
 Set-Location $Env:SERVER_ROOT
