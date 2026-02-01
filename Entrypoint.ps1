@@ -158,7 +158,7 @@ if (-not (Test-Path $Env:START_EXE))
     throw "START_EXE not found: $Env:START_EXE"
 }
 
-exec $Env:START_EXE $arguments
+exec --% $Env:START_EXE @arguments
 
 Write-Log "Server has stopped"
 
