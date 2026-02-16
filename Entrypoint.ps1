@@ -19,6 +19,8 @@ if (-not (Test-Path -Path $Env:USER_HOOKS)) {
 Copy-Item -Path "$Env:BASE_MODULES/*" -Destination "$Env:USER_MODULES" -Recurse -Force
 Copy-Item -Path "$Env:BASE_HOOKS/*" -Destination "$Env:USER_HOOKS" -Recurse -Force
 
+Install-Module -Name PSCompression -Scope AllUsers -Force -AllowClobber -ErrorAction SilentlyContinue
+
 Invoke-Hook "PreInitialization"
 
 Write-Log "Mounting OverlayFS"

@@ -69,4 +69,6 @@ COPY ./nginx.conf /usr/local/share/nginx.conf.template
 # Runtime
 # ----------------------------
 WORKDIR /config
+USER lancommander
+SHELL ["pwsh", "-Command"]
 ENTRYPOINT ["/usr/local/bin/entrypoint.ps1"]
