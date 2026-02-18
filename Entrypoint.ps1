@@ -48,7 +48,7 @@ if (-not (Test-Path -Path $Env:WORK_DIR)) {
 }
 
 try {
-    Mount-Overlay -MountPoint $Env:SERVER_ROOT -LowerDir $Env:SERVER_DIR -UpperDir $Env:OVERLAY_DIR -WorkDir $Env:WORK_DIR -RequireEmptyWorkDir
+    Mount-Overlay -MountPoint $Env:SERVER_ROOT -LowerDir $Env:SERVER_DIR -UpperDir $Env:OVERLAY_DIR -WorkDir $Env:WORK_DIR -RequireEmptyWorkDir -OverlayOption "xino=on"
     Write-Log "OverlayFS mounted successfully"
 } catch {
     Write-Log -Level Error "Failed to mount OverlayFS: $($_.Exception.Message)"
