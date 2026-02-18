@@ -6,6 +6,11 @@
 
 Write-Log "Starting entry script..."
 
+$runUser  = $env:USER
+$runGroup = $env:GROUP
+$runUid   = $env:UID
+$runGid   = $env:GID
+
 Write-Log "Setting up modules and hooks"
 
 if (-not (Test-Path -Path $Env:USER_MODULES)) {
@@ -53,6 +58,11 @@ try {
 } catch {
     Write-Log -Level Error "Failed to mount OverlayFS: $($_.Exception.Message)"
 }
+
+Write-Log "Chowning files to ${runUser}:${runGroup} (${runUid}:${runGid})"
+
+chown -R "${runUser}:${runGroup}" $Env:SERVER_ROOT
+chown -R "${runUser}:${runGroup}" $Env:OVERLAY_DIR
 
 Invoke-Hook "PostInitialization"
 
@@ -151,16 +161,59 @@ Invoke-Hook "ServerStarted"
 
 Set-Location $Env:SERVER_ROOT
 
-$arguments = if ($env:START_ARGS) { [System.Management.Automation.PSParser]::Tokenize($env:START_ARGS, [ref]$null) |
-                               Where-Object { $_.Type -eq 'CommandArgument' } |
-                               ForEach-Object { $_.Content } } else { @() }
+function Test-Int($v) {
+    return $v -match '^\d+$'
+}
+
+function Split-CommandLine {
+    param([string]$CommandLine)
+
+    [System.Management.Automation.PSParser]::Tokenize(
+        $CommandLine,
+        [ref]$null
+    ) | Where-Object {
+        $_.Type -eq 'CommandArgument'
+    } | ForEach-Object {
+        $_.Content
+    }
+}
+
+$gosuTarget = $null
+
+if ($runUid -and (Is-Int $runUid)) {
+    if ($runGid -and (Is-Int $runGid)) {
+        $gosuTarget = "${runUid}:${runGid}"
+    }
+    else {
+        $gosuTarget = "$runUid"
+    }
+}
+elseif ($runUser) {
+    if ($runGroup) {
+        $gosuTarget = "${runUser}:${runGroup}"
+    }
+    else {
+        $gosuTarget = "$runUser"
+    }
+}
+else {
+    $gosuTarget = "lancommander:lancommander"
+}
 
 if (-not (Test-Path $Env:START_EXE))
 { 
     throw "START_EXE not found: $Env:START_EXE"
 }
 
-exec $Env:START_EXE @arguments
+$startArgs = @()
+
+if ($Env:START_ARGS) {
+    $startArgs = Split-CommandLine $Env:START_ARGS
+}
+
+Write-Host "Starting as ${gosuTarget}: $exe $($exeArgs -join ' ')"
+
+exec gosu $gosuTarget $exe @exeArgs
 
 Write-Log "Server has stopped"
 

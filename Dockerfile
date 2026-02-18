@@ -9,7 +9,7 @@ ENV CONFIG_DIR=/config \
     SERVER_DIR=/config/Server \
     SERVER_ROOT=/config/Merged \
     WORK_DIR=/config/.overlay-work \
-    LANCOMMANDER_HOME=/home/lancommander \
+    HOME_DIR=/home/lancommander \
     BASE_MODULES=/usr/local/share/powershell/Modules \
     BASE_HOOKS=/usr/local/share/powershell/Hooks \
     USER_MODULES=/config/Scripts/Modules \
@@ -17,18 +17,23 @@ ENV CONFIG_DIR=/config \
     START_EXE="" \
     START_ARGS="" \
     HTTP_FILESERVER_ENABLED="" \
-    HTTP_FILESERVER_ROOT=/config/Server \
-    HTTP_FILESERVER_FILE_PATTERN=""
+    HTTP_FILESERVER_ROOT=/config/Merged \
+    HTTP_FILESERVER_FILE_PATTERN="" \
+    UID=1000 \
+    GID=1000 \
+    USER=lancommander \
+    GROUP=lancommander
 
 # ----------------------------
 # User + directories
 # ----------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
+        gosu \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd -m -u 1337 -d "${LANCOMMANDER_HOME}" -s /usr/sbin/nologin lancommander \
+    && useradd -m -u ${UID} -d "${HOME_DIR}" -s /usr/sbin/nologin ${USER} \
     && mkdir -p \
-        "${LANCOMMANDER_HOME}" \
+        "${HOME_DIR}" \
         "${CONFIG_DIR}" \
         "${OVERLAY_DIR}" \
         "${SERVER_DIR}" \
@@ -36,8 +41,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         "${SERVER_ROOT}" \
         "${BASE_MODULES}" \
         "${BASE_HOOKS}" \
-    && chown -R lancommander:lancommander \
-        "${LANCOMMANDER_HOME}" \
+    && chown -R ${USER}:${GROUP} \
+        "${HOME_DIR}" \
         "${CONFIG_DIR}" \
         "${OVERLAY_DIR}" \
         "${SERVER_DIR}"
@@ -69,5 +74,4 @@ COPY ./nginx.conf /usr/local/share/nginx.conf.template
 # Runtime
 # ----------------------------
 WORKDIR /config
-USER lancommander
 ENTRYPOINT ["/usr/local/bin/entrypoint.ps1"]
