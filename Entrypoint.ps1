@@ -203,9 +203,9 @@ if ($Env:START_ARGS) {
     $startArgs = Split-CommandLine $Env:START_ARGS
 }
 
-Write-Host "Starting as ${gosuTarget}: $exe $($exeArgs -join ' ')"
+Write-Host "Starting as ${gosuTarget}: $Env:START_EXE $($startArgs -join ' ')"
 
-exec gosu $gosuTarget $exe @exeArgs
+exec gosu $gosuTarget $Env:START_EXE @startArgs
 
 Write-Log "Server has stopped"
 
