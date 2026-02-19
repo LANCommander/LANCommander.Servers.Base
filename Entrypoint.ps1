@@ -180,15 +180,7 @@ function Split-CommandLine {
 
 $gosuTarget = $null
 
-if ($runUid -and (Test-Int $runUid)) {
-    if ($runGid -and (Test-Int $runGid)) {
-        $gosuTarget = "${runUid}:${runGid}"
-    }
-    else {
-        $gosuTarget = "$runUid"
-    }
-}
-elseif ($runUser) {
+if ($runUser) {
     if ($runGroup) {
         $gosuTarget = "${runUser}:${runGroup}"
     }
