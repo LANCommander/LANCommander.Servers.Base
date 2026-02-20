@@ -61,8 +61,7 @@ try {
 
 Write-Log "Chowning files to ${runUser}:${runGroup} (${runUid}:${runGid})"
 
-chown -R "${runUser}:${runGroup}" $Env:SERVER_ROOT
-chown -R "${runUser}:${runGroup}" $Env:OVERLAY_DIR
+chown -R "${runUser}:${runGroup}" /config
 
 Invoke-Hook "PostInitialization"
 
