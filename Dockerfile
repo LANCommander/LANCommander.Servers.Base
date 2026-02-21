@@ -22,7 +22,8 @@ ENV CONFIG_DIR=/config \
     UID=1000 \
     GID=1000 \
     USER=lancommander \
-    GROUP=lancommander
+    GROUP=lancommander \
+    PATH="$PATH:/config/Merged"
 
 # ----------------------------
 # User + directories
