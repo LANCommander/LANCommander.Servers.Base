@@ -170,7 +170,7 @@ function Split-CommandLine {
     [System.Management.Automation.PSParser]::Tokenize(
         $CommandLine,
         [ref]$null
-    ) | Where-Object { $_.Type -eq 'CommandArgument' } | ForEach-Object { $_.Content }
+    ) | Where-Object { $_.Type -in 'Command', 'CommandArgument', 'Number', 'String' } | ForEach-Object { $_.Content }
 }
 
 function Resolve-StartExe {
