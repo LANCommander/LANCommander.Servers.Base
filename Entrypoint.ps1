@@ -158,10 +158,10 @@ if ($Env:HTTP_FILESERVER_ENABLED -eq "true" -or $Env:HTTP_FILESERVER_ENABLED -eq
 
 Invoke-Hook "ServerStarted"
 
-Set-Location $Env:SERVER_ROOT
+Set-Location -LiteralPath $Env:SERVER_ROOT
 
 function Test-Int($v) {
-    return $v -match '^\d+$'
+    $v -match '^\d+$'
 }
 
 function Split-CommandLine {
@@ -170,50 +170,51 @@ function Split-CommandLine {
     [System.Management.Automation.PSParser]::Tokenize(
         $CommandLine,
         [ref]$null
-    ) | Where-Object {
-        $_.Type -eq 'CommandArgument'
-    } | ForEach-Object {
-        $_.Content
-    }
+    ) | Where-Object { $_.Type -eq 'CommandArgument' } | ForEach-Object { $_.Content }
 }
 
-$gosuTarget = $null
+function Resolve-StartExe {
+    param([Parameter(Mandatory)][string]$Exe)
 
-if ($runUid -and (Test-Int $runUid)) {
-    if ($runGid -and (Test-Int $runGid)) {
-        $gosuTarget = "${runUid}:${runGid}"
+    # If it looks like a path (contains / or \) resolve it relative to current location
+    if ($Exe -match '[/\\]') {
+        $p = Resolve-Path -LiteralPath $Exe -ErrorAction SilentlyContinue
+        if ($p) { return $p.Path }
+        throw "START_EXE path not found (relative to $((Get-Location).Path)): $Exe"
     }
-    else {
-        $gosuTarget = "$runUid"
+
+    # Try direct path existence (covers ./foo or foo in cwd without slashes)
+    if (Test-Path -LiteralPath $Exe) {
+        return (Resolve-Path -LiteralPath $Exe).Path
     }
-}
-elseif ($runUser) {
-    if ($runGroup) {
-        $gosuTarget = "${runUser}:${runGroup}"
-    }
-    else {
-        $gosuTarget = "$runUser"
-    }
-}
-else {
-    $gosuTarget = "lancommander:lancommander"
+
+    # Otherwise treat as PATH command
+    $cmd = Get-Command $Exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    throw "START_EXE not found as file in cwd or command on PATH: $Exe"
 }
 
-if (-not (Test-Path $Env:START_EXE))
-{ 
-    throw "START_EXE not found: $Env:START_EXE"
+$gosuTarget = if ($runUid -and (Test-Int $runUid)) {
+    if ($runGid -and (Test-Int $runGid)) { "${runUid}:${runGid}" } else { "$runUid" }
+} elseif ($runUser) {
+    if ($runGroup) { "${runUser}:${runGroup}" } else { "$runUser" }
+} else {
+    "lancommander:lancommander"
 }
 
 $startArgs = @()
+if ($Env:START_ARGS) { $startArgs = Split-CommandLine $Env:START_ARGS }
 
-if ($Env:START_ARGS) {
-    $startArgs = Split-CommandLine $Env:START_ARGS
-}
+$startExe = Resolve-StartExe $Env:START_EXE
 
-Write-Host "Starting as ${gosuTarget}: $Env:START_EXE $($startArgs -join ' ')"
+Write-Host "WorkingDir: $((Get-Location).Path)"
+Write-Host "Starting as ${gosuTarget}: $startExe $($startArgs -join ' ')"
 
-exec gosu $gosuTarget $Env:START_EXE @startArgs
+& gosu $gosuTarget $startExe @startArgs
+$exitCode = $LASTEXITCODE
 
-Write-Log "Server has stopped"
-
+Write-Log "Server has stopped (exit code: $exitCode)"
 Invoke-Hook "ServerStopped"
+
+exit $exitCode
