@@ -167,10 +167,12 @@ function Test-Int($v) {
 function Split-CommandLine {
     param([string]$CommandLine)
 
-    [System.Management.Automation.PSParser]::Tokenize(
-        $CommandLine,
-        [ref]$null
-    ) | Where-Object { $_.Type -in 'Command', 'CommandArgument', 'Number', 'String' } | ForEach-Object { $_.Content }
+    [regex]::Matches($CommandLine, '"[^"]*"|''[^'']*''|\S+') | ForEach-Object {
+        $v = $_.Value
+        if ($v -match '^"(.*)"$') { $Matches[1] }
+        elseif ($v -match "^'(.*)'$") { $Matches[1] }
+        else { $v }
+    }
 }
 
 function Resolve-StartExe {
